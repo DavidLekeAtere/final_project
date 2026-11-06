@@ -1,96 +1,127 @@
-/*
+/* //<>//
  Mr. Marty
  Final Processing project
- TODO: Add brief description of final project here
+ Xim Aim Trainer - 3D Reflex Simulation
  */
 
 boolean homePage = true;
-float targetX;
-float targetY;
-float ballSize = 50;
-
+float x, y, z;
+float screenSX, screenSY, screenR;
+float r = 15;
+int score = 0;
 
 void setup() {
-  size(800, 600, P3D); // P3D tells Processing to use 3D mode
-  noStroke();          // Removes rough black outlines for a clean look
-  targetX = random(25, width - 25);
-  targetY = random(25, height - 25);
+  size(800, 600, P3D);
+  noStroke();
+  randomizeTarget();
+  frameRate(240);
+}
+
+void randomizeTarget() {
+  x = random(-150, 150);
+  y = random(-250, -30);
+  z = random(-150, 150);
 }
 
 void draw() {
-  // FIX: Reset to the standard 2D camera view at the start of every frame
-  // so the homePage displays correctly in P3D mode.
-  camera();
+  camera(); // reset to the default camera each frame
 
   if (homePage) {
     background(0);
 
-    // Title text in white
     textSize(40);
     fill(255);
-    textAlign(CENTER, CENTER); // Centers text math automatically
+    textAlign(CENTER, CENTER);
     text("Xim Aim Trainer", 400, 125);
 
-    // --- PLAY BUTTON TRIANGLE ---
-    // A right-pointing triangle centered on the screen
-    // Top-left corner: (350, 250), Bottom-left corner: (350, 350), Right tip: (450, 300)
     if (mouseX > 350 && mouseX < 450 && mouseY > 250 && mouseY < 350) {
-      fill(0, 200, 0); // Darker green when hovering
+      fill(0, 200, 0);
     } else {
-      fill(0, 255, 0); // Bright green normally
+      fill(0, 255, 0);
     }
     triangle(350, 250, 350, 350, 450, 300);
 
-    // --- PLAY TEXT UNDER BUTTON ---
     textSize(30);
     fill(255);
-    text("Play", 380, 400); // Placed exactly under the triangle base
+    text("Play", 400, 400); // 400 = center of the triangle
   } else {
-    background(220, 225, 235); // Light gray-blue sky color
-    lights();                  // Turns on shading so blocks look 3D
+    background(220, 225, 235);
+    lights();
 
-    // --- SIMPLE 3D CAMERA SETTING ---
     camera(0, -200, 500, 0, -100, 0, 0, 1, 0);
 
-    // --- DRAW THE FLOOR ---
-    fill(240); // Clean white-gray
+    // Floor
+    fill(240);
     box(1200, 10, 1200);
 
-    // --- DRAW THE ELEVATED WALLS / BLOCKS ---
-    fill(180, 190, 205); // Blue-gray wall color
+    // Walls
+    fill(180, 190, 205);
 
-    // Left Wall
     push();
     translate(-400, -150, 0);
     box(50, 300, 800);
     pop();
 
-    // Right Wall
     push();
     translate(400, -150, 0);
     box(50, 300, 800);
     pop();
 
-    // Center Target Platform (Far back)
+    // Back platform
     fill(210);
     push();
     translate(0, -80, -300);
     box(250, 150, 250);
     pop();
 
+    // Target sphere
+    fill(255, 0, 0);
+    push();
+    translate(x, y, z);
+    sphere(r);
+
+    // Capture where the sphere appears on screen
+    screenSX = screenX(0, 0, 0);
+    screenSY = screenY(0, 0, 0);
+    screenR  = abs(screenX(r, 0, 0) - screenSX);
+    pop();
+
+    // ==========================================
+    // 2D HUD OVERLAY
+    // ==========================================
+    hint(DISABLE_DEPTH_TEST); // Prevents 3D objects from overlapping text
+    camera();                 // Resets camera to 2D screen space coordinates
+
+    // Crosshair (instead of diagonal fullscreen line)
+    cursor(CROSS);
     noStroke();
-    // Set color to solid red (Red, Green, Blue)
-    fill(255, 40, 40);
-    ellipse(targetX, targetY, ballSize, ballSize);
+
+    // Score display (Top Left Corner)
+    fill(0); // Black text for clean contrast
+    textSize(25);
+    textAlign(LEFT, TOP);
+    text("Score: " + score, 20, 20);
+
+    // FrameRate display (Top Right Corner)
+    fill(100); // Muted gray text
+    textSize(14);
+    textAlign(RIGHT, TOP);
+    text("FPS: " + int(frameRate), width - 20, 20);
+
+    hint(ENABLE_DEPTH_TEST); // CRITICAL: Turn 3D depth engine back on for next frame
+    // ==========================================
   }
 }
 
-
 void mousePressed() {
   if (homePage) {
-    // Check if the user clicks near the play button boundaries
-    if (mouseX > 350 && mouseX < 450 && mouseY > 250 && mouseY < 410) {
+    if (mouseX > 350 && mouseX < 450 && mouseY > 250 && mouseY < 350) {
       homePage = false;
+    }
+  } else {
+    if (dist(mouseX, mouseY, screenSX, screenSY) < screenR) {
+      randomizeTarget();
+      score++;
     }
   }
 }
