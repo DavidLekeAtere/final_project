@@ -20,6 +20,13 @@ int timer = 30;
 boolean timerStarted = false;
 float startTime;
 
+float ringX, ringY;
+int ringStart = -1000;
+boolean ringIsBonus = false;
+
+boolean bonusTarget = false;
+int targetValue = 1;
+
 PImage bg;
 
 void setup() {
@@ -41,6 +48,20 @@ void randomizeTarget() {
   targetX = random(-150, 150);
   targetY = random(-250, -30);
   targetZ = random(-150, 150);
+
+  // Difficulty: lose 0.5 radius per point, down to a minimum of 8
+  float baseRadius = 15 ;
+
+  // Bonus: about 1 in 8 targets is gold, smaller, and worth 3
+  if (random(1) < 0.125) {
+    bonusTarget = true;
+    targetValue = 3;
+    targetRadius = baseRadius * 0.7;
+  } else {
+    bonusTarget = false;
+    targetValue = 1;
+    targetRadius = baseRadius;
+  }
 }
 
 void saveHighScore() {
@@ -120,9 +141,13 @@ void draw() {
   box(250, 150, 250);
   pop();
 
-  // Target sphere
+  // Target sphere (gold if it's a bonus target)
   if (!gameOver) {
-    fill(255, 0, 0);
+    if (bonusTarget) {
+      fill(255, 200, 0);
+    } else {
+      fill(255, 0, 0);
+    }
     push();
     translate(targetX, targetY, targetZ);
     sphere(targetRadius);
@@ -136,6 +161,21 @@ void draw() {
   hint(DISABLE_DEPTH_TEST);
   camera();
   noLights();
+
+  // Hit ring (drawn in 2D so it lines up with the screen position of the hit)
+  int age = millis() - ringStart;
+  if (age < 300) {
+    float alpha = map(age, 0, 300, 255, 0);
+    noFill();
+    if (ringIsBonus) {
+      stroke(255, 200, 0, alpha);
+    } else {
+      stroke(255, 80, 80, alpha);
+    }
+    strokeWeight(3);
+    ellipse(ringX, ringY, age * 0.5, age * 0.5);
+    noStroke();
+  }
 
   fill(0);
   textSize(25);
@@ -181,11 +221,22 @@ void mousePressed() {
       timerStarted = true;
       startTime = millis();
     }
-    score++;
+    score += targetValue;
+    ringX = screenSX;
+    ringY = screenSY;
+    ringStart = millis();
+    ringIsBonus = bonusTarget;
     randomizeTarget();
     hitSound.play();
+  } else if (bonusTarget) {
+    // Missed the gold ball, so it disappears and is replaced by a normal one
+    randomizeTarget();
+    bonusTarget = false;
+    targetValue = 1;
+    targetRadius = 15 - min(score * 0.5, 7);
   }
 }
+
 void keyPressed() {
   if (key == BACKSPACE && gameOver) {
     resetGame();
