@@ -8,7 +8,6 @@ import processing.sound.*;
 
 SoundFile hitSound;
 
-
 boolean homePage = true;
 boolean gameOver = false;
 float screenSX, screenSY, screenR;
@@ -27,10 +26,13 @@ boolean ringIsBonus = false;
 boolean bonusTarget = false;
 int targetValue = 1;
 
+// Size of the Play button (it is positioned from width/height so it stays centered)
+float buttonSize = 100;
+
 PImage bg;
 
 void setup() {
-  size(800, 600, P3D);
+  fullScreen(P3D);  // use size(800, 600, P3D); instead if you want a normal window
   bg = loadImage("home_bg.png");
   noStroke();
   randomizeTarget();
@@ -44,13 +46,20 @@ void setup() {
   hitSound = new SoundFile(this, "ding-sound-effect_2.mp3");
 }
 
+// True when the mouse is over the Play button (always centered on the screen)
+boolean overPlayButton() {
+  float half = buttonSize / 2;
+  return mouseX > width/2 - half && mouseX < width/2 + half &&
+    mouseY > height/2 - half && mouseY < height/2 + half;
+}
+
 void randomizeTarget() {
   targetX = random(-150, 150);
   targetY = random(-250, -30);
   targetZ = random(-150, 150);
 
   // Difficulty: lose 0.5 radius per point, down to a minimum of 8
-  float baseRadius = 15 ;
+  float baseRadius = 15 - min(score * 0.5, 7);
 
   // Bonus: about 1 in 8 targets is gold, smaller, and worth 3
   if (random(1) < 0.125) {
@@ -85,18 +94,21 @@ void draw() {
     textSize(40);
     fill(255);
     textAlign(CENTER, CENTER);
-    text("Xim Aim Trainer", 400, 125);
+    text("Xim Aim Trainer", width/2, height * 0.2);
 
-    if (mouseX > 350 && mouseX < 450 && mouseY > 250 && mouseY < 350) {
+    if (overPlayButton()) {
       fill(0, 200, 0);
     } else {
       fill(0, 255, 0);
     }
-    triangle(350, 250, 350, 350, 450, 300);
+    float half = buttonSize / 2;
+    triangle(width/2 - half, height/2 - half,
+      width/2 - half, height/2 + half,
+      width/2 + half, height/2);
 
     textSize(30);
     fill(255);
-    text("Play", 400, 400);
+    text("Play", width/2, height/2 + half + 50);
     hint(ENABLE_DEPTH_TEST);
     return;
   }
@@ -204,7 +216,7 @@ void draw() {
 
 void mousePressed() {
   if (homePage) {
-    if (mouseX > 350 && mouseX < 450 && mouseY > 250 && mouseY < 350) {
+    if (overPlayButton()) {
       homePage = false;
       cursor(CROSS);
     }
@@ -229,11 +241,8 @@ void mousePressed() {
     randomizeTarget();
     hitSound.play();
   } else if (bonusTarget) {
-    // Missed the gold ball, so it disappears and is replaced by a normal one
+    // Missed the gold ball, so it disappears and is replaced by a new target
     randomizeTarget();
-    bonusTarget = false;
-    targetValue = 1;
-    targetRadius = 15 - min(score * 0.5, 7);
   }
 }
 
